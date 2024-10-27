@@ -15,8 +15,8 @@ import java.util.UUID;
 @Component
 public class TokenUtil {
 
-    @Value("${jwt.secret}")// Clave secreta para firmar el JWT, definida en application.properties
-    private String secretKey;
+    //@Value("${jwt.secret}")// Clave secreta para firmar el JWT, definida en application.properties
+    private String secretKey = "304f42d8711889585a433a9ec28ebae231a3c379c61b6199023b6ae00a6d4a3d";
 
     @Value("${jwt.expiration}") // Tiempo de expiración en milisegundos, también en application.properties
     private long expirationTime;
@@ -29,7 +29,7 @@ public class TokenUtil {
                 .setSubject(user.getAccountNumber().toString()) // Usar el número de cuenta como sujeto
                 .setIssuedAt(now)
                 .setExpiration(expiryDate)
-                .signWith(SignatureAlgorithm.HS512, secretKey)
+                .signWith(SignatureAlgorithm.HS256, secretKey)
                 .compact();
     }
 
@@ -46,11 +46,16 @@ public class TokenUtil {
     }
 
     public UUID extractAccountNumberFromToken(String token) {
-        Claims claims = Jwts.parser()
-                .setSigningKey(secretKey)
-                .parseClaimsJws(token)
-                .getBody();
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(secretKey)
+                    .parseClaimsJws(token)
+                    .getBody();
 
-        return UUID.fromString(claims.getSubject()); // Convertir el sujeto de vuelta a UUID
+            return UUID.fromString(claims.getSubject()); // Convertir el sujeto de vuelta a UUID
+        } catch (Exception e) {
+            // Manejar la excepción, tal vez lanzar una excepción personalizada
+            throw new RuntimeException("Token no válido", e);
+        }
     }
 }

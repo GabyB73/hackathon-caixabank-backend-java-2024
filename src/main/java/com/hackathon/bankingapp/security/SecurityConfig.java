@@ -30,6 +30,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable) // Deshabilita CSRF si no se necesita
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/users/register", "/api/users/login").permitAll() // Endpoints públicos
+                .requestMatchers("/api/users/info/**").authenticated() // Requerir autenticación para rutas de usuario
                 .anyRequest().authenticated() // Todo lo demás requiere autenticación
                 )
                 .sessionManagement(session -> session

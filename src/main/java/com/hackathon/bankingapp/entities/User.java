@@ -1,9 +1,7 @@
 package com.hackathon.bankingapp.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import com.hackathon.bankingapp.utils.UUIDUtil;
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -23,7 +21,8 @@ import java.util.UUID;
 public class User {
 
     @Id
-    private UUID accountNumber = UUID.randomUUID(); // Asignación directa al campo UUID como número de cuenta
+    @Column(name = "account_number", columnDefinition = "BINARY(16)")
+    private byte[] accountNumber;
 
     @NotBlank
     private String name;
@@ -41,6 +40,16 @@ public class User {
 
     @NotBlank
     private String phoneNumber;
+
+    // Constructor que acepta un UUID
+    public User(UUID accountNumber) {
+        this.accountNumber = UUIDUtil.toBytes(accountNumber); // Convertir UUID a byte[]
+    }
+
+    // Método para obtener el UUID del número de cuenta
+    public UUID getAccountNumberAsUUID() {
+        return UUIDUtil.fromBytes(accountNumber); // Convertir byte[] a UUID
+    }
 
     // toString, equals y hashCode si es necesario
 
