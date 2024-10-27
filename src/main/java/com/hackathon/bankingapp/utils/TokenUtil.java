@@ -33,6 +33,18 @@ public class TokenUtil {
                 .compact();
     }
 
+    public String extractUsername(String token) {
+        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getSubject();
+    }
+
+    public boolean validateToken(String token) {
+        return extractUsername(token) != null && !isTokenExpired(token);
+    }
+
+    private boolean isTokenExpired(String token) {
+        return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token).getBody().getExpiration().before(new Date());
+    }
+
     public UUID extractAccountNumberFromToken(String token) {
         Claims claims = Jwts.parser()
                 .setSigningKey(secretKey)
