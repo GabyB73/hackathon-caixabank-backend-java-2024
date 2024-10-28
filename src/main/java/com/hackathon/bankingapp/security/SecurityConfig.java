@@ -21,9 +21,6 @@ public class SecurityConfig {
     @Autowired
     private JwtFilter jwtFilter;
 
-    @Autowired
-    private  PasswordEncoder passwordEncoder;
-
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -31,7 +28,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/users/register", "/api/users/login").permitAll() // Endpoints públicos
                 .requestMatchers("/api/users/info/**").authenticated() // Requerir autenticación para rutas de usuario
-                .anyRequest().authenticated() // Todo lo demás requiere autenticación
+                .anyRequest().authenticated() // Cualquier otra ruta requiere autenticación
                 )
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
