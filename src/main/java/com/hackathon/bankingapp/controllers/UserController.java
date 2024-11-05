@@ -41,7 +41,7 @@ public class UserController {
     @GetMapping("/info")
     public ResponseEntity<UserInfoResponseDTO> getUserInfo(@RequestHeader("Authorization") String token) {
         UUID accountNumber = tokenUtil.extractAccountNumberFromToken(token); // Método que extrae el número de cuenta del token
-        UserInfoResponseDTO userInfo = userService.getUserInfo(accountNumber);
+        UserInfoResponseDTO userInfo = userService.getUserInfoFromToken(token);
         return new ResponseEntity<>(userInfo, HttpStatus.OK);
     }
 

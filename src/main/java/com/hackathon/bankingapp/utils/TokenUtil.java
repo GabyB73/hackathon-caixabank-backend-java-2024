@@ -1,12 +1,14 @@
 package com.hackathon.bankingapp.utils;
 
 import com.hackathon.bankingapp.entities.User;
+import com.hackathon.bankingapp.repositories.UserRepository;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.hibernate.annotations.Comment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +18,9 @@ import java.util.UUID;
 
 @Component
 public class TokenUtil {
+
+    @Autowired
+    UserRepository userRepository;
 
     private static final Logger logger = LoggerFactory.getLogger(TokenUtil.class);
 
@@ -86,6 +91,24 @@ public class TokenUtil {
             return accountNumber;
         } catch (Exception e) {
             logger.error("Error extracting account number from token: {}", e.getMessage());
+            throw new RuntimeException("Token no válido", e);
+        }
+    }
+
+    public User getUserFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(secretKey)
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            UUID accountNumber = UUID.fromString(claims.getSubject());
+            // Recuperar la información del usuario desde la base de datos usando el número de cuenta
+            User user = userRepository.findByAccountNumber(UUIDUtil.toBytes(accountNumber))
+                    .orElseThrow(() -> new RuntimeException("User not found for account number: " + accountNumber));
+            return user;
+        } catch (Exception e) {
+            logger.error("Error extracting user from token: {}", e.getMessage());
             throw new RuntimeException("Token no válido", e);
         }
     }

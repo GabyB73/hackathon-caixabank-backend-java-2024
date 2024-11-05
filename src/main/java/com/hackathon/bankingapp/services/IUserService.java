@@ -12,7 +12,7 @@ public interface IUserService {
 
     User registerUser(UserRegistrationDTO userRegistrationDTO);
     Optional<User> loginUser(String identifier, String password);
-    UserInfoResponseDTO getUserInfo(UUID accountNumber);
+    UserInfoResponseDTO getUserInfoFromToken(String token);
     AccountInfoResponseDTO getAccountInfo(UUID accountNumber);
     void logoutUser(String token);
 }

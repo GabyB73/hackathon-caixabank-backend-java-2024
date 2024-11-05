@@ -4,9 +4,17 @@ import com.hackathon.bankingapp.DTO.AccountInfoResponseDTO;
 import com.hackathon.bankingapp.DTO.UserInfoResponseDTO;
 import com.hackathon.bankingapp.DTO.UserRegistrationDTO;
 import com.hackathon.bankingapp.entities.User;
+import com.hackathon.bankingapp.exceptions.*;
 import com.hackathon.bankingapp.repositories.UserRepository;
+import com.hackathon.bankingapp.utils.TokenUtil;
 import com.hackathon.bankingapp.utils.UUIDUtil;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import org.apache.coyote.BadRequestException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +24,18 @@ import java.util.UUID;
 @Service
 public class UserServiceImpl implements IUserService {
 
+    private static final Logger logger = LoggerFactory.getLogger(TokenUtil.class);
+
+
     @Autowired
     private UserRepository userRepository;
 
     @Autowired
     private ITokenBlacklistService tokenBlacklistService;
+
+    @Value("${jwt.secret}") // Clave secreta para firmar el JWT, definida en application.properties
+    private String secretKey;
+
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -37,7 +52,20 @@ public class UserServiceImpl implements IUserService {
 
         // Verificar si el usuario ya existe en la base de datos
         if (userRepository.findByEmail(userRegistrationDTO.getEmail()).isPresent()) {
-            throw new RuntimeException("User with email already exists: " + userRegistrationDTO.getEmail());
+            try {
+                throw new EmailAlreadyExistsException("This email already exists: " + userRegistrationDTO.getEmail());
+            } catch (EmailAlreadyExistsException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        // Verificar si el número de teléfono ya existe en la base de datos
+        if (userRepository.findByPhoneNumber(userRegistrationDTO.getPhoneNumber()).isPresent()) {
+            try {
+                throw new PhoneNumberAlreadyExistsException("This phone number already exists: " + userRegistrationDTO.getPhoneNumber());
+            } catch (PhoneNumberAlreadyExistsException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         // Validar que los campos no estén vacíos
@@ -46,13 +74,13 @@ public class UserServiceImpl implements IUserService {
                 userRegistrationDTO.getPassword().isEmpty() ||
                 userRegistrationDTO.getAddress().isEmpty() ||
                 userRegistrationDTO.getPhoneNumber().isEmpty()) {
-            throw new RuntimeException("Fields cannot be empty");
+            throw new EmptyFieldException("Fields cannot be empty");
         }
 
         // Validar el formato del correo electrónico
         String emailRegex = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
         if (!userRegistrationDTO.getEmail().matches(emailRegex)) {
-            throw new RuntimeException("Invalid email format: " + userRegistrationDTO.getEmail());
+            throw new InvalidEmailFormatException("Invalid email format: " + userRegistrationDTO.getEmail());
         }
 
         // Encriptar la contraseña
@@ -62,7 +90,7 @@ public class UserServiceImpl implements IUserService {
         User user = new User();
         // Generar un nuevo UUID para el número de cuenta
         UUID accountNumber = UUID.randomUUID();
-        user.setAccountNumber(toByteArray(accountNumber)); // Convertir UUID a byte[]
+        user.setAccountNumber(UUIDUtil.toBytes(accountNumber)); // Convertir UUID a byte[]
         user.setName(userRegistrationDTO.getName());
         user.setPassword(hashedPassword);
         user.setEmail(userRegistrationDTO.getEmail());
@@ -85,45 +113,47 @@ public class UserServiceImpl implements IUserService {
                 userOptional = userRepository.findByAccountNumber(toByteArray(accountNumber));
             } catch (IllegalArgumentException e) {
                 // El identificador no es UUID válido; se manejará con excepción personalizada luego
-                // TODO: Reemplazar por excepciones personalizadas (tarea 7)
-                throw new RuntimeException("Invalid identifier format");
+                throw new InvalidIdentifierFormatException("Invalid identifier format");
 
             }
         }
 
         // Verificar existencia y validez de contraseña
         return Optional.of(userOptional.filter(user -> passwordEncoder.matches(password, user.getPassword()))
-                // TODO: Reemplazar por excepciones personalizadas (tarea 7)
-                .orElseThrow(() -> new RuntimeException("Invalid credentials or user not found")));
+                .orElseThrow(() -> new InvalidCredentialsException("Invalid credentials or user not found")));
 
     }
 
     @Override
-    public UserInfoResponseDTO getUserInfo(UUID accountNumber) {
+    public UserInfoResponseDTO getUserInfoFromToken(String token) {
+        try {
+            Claims claims = Jwts.parser()
+                    .setSigningKey(secretKey)
+                    .parseClaimsJws(token)
+                    .getBody();
 
-        // Buscar el usuario por el número de cuenta
-        User user = userRepository.findByAccountNumber(toByteArray(accountNumber))
-                // TODO: Reemplazar por excepciones personalizadas (tarea 7)
-                .orElseThrow(() -> new RuntimeException("User not found for account number: " + accountNumber));
+            UUID accountNumber = UUID.fromString(claims.getSubject());
+            User user = userRepository.findByAccountNumber(UUIDUtil.toBytes(accountNumber))
+                    .orElseThrow(() -> new UserNotFoundException("User not found for account number: " + accountNumber));
 
-        // Convertir byte[] a UUID para el DTO de la respuests
-        UUID accountNumberUUID = toUUID(user.getAccountNumber()); // Asegúrate de que user.getAccountNumber() sea byte[]
+            UUID accountNumberUUID = toUUID(user.getAccountNumber());
 
-        // Mapear el usuario a DTO de respuesta
-        return new UserInfoResponseDTO(
-                user.getName(),
-                user.getEmail(),
-                user.getPhoneNumber(),
-                user.getAddress(),
-                accountNumberUUID);
-
+            return new UserInfoResponseDTO(
+                    user.getName(),
+                    user.getEmail(),
+                    user.getPhoneNumber(),
+                    user.getAddress(),
+                    accountNumberUUID);
+        } catch (Exception e) {
+            logger.error("Error extracting user from token: {}", e.getMessage());
+            throw new InvalidTokenException("Invalid token", e);
+        }
     }
-
     @Override
     public AccountInfoResponseDTO getAccountInfo(UUID accountNumber) {
         // Buscar el usuario por el número de cuenta
         User user = userRepository.findByAccountNumber(toByteArray(accountNumber))
-                .orElseThrow(() -> new RuntimeException("User not found for account number: " + accountNumber));
+                .orElseThrow(() -> new UserNotFoundException("User not found for account number: " + accountNumber));
 
         // Supongamos que tienes un método en User que obtiene el saldo
         double balance = user.getBalance();  // Aquí deberías tener un método en la entidad User

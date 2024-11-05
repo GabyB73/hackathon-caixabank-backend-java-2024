@@ -25,7 +25,7 @@ public class User {
     private byte[] accountNumber;
 
     @NotBlank
-    private String name;
+    private String name; // Full name of the user
 
     @NotBlank
     @Email // Asegura que el email tenga un formato válido
@@ -63,6 +63,7 @@ public class User {
                 Objects.equals(email, user.email) &&
                 Objects.equals(address, user.address) &&
                 Objects.equals(phoneNumber, user.phoneNumber);
+
     }
 
     @Override
@@ -78,7 +79,7 @@ public class User {
                 ", email='" + email + '\'' +
                 ", address='" + address + '\'' +
                 ", phoneNumber='" + phoneNumber + '\'' +
-                '}'; // Sin incluir password
+                '}';
     }
 
     public double getBalance() {
