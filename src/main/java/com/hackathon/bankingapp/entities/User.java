@@ -1,6 +1,5 @@
 package com.hackathon.bankingapp.entities;
 
-import com.hackathon.bankingapp.utils.UUIDUtil;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -11,7 +10,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Objects;
-import java.util.UUID;
 
 @Entity
 @Getter

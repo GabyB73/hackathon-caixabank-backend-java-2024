@@ -1,12 +1,9 @@
 package com.hackathon.bankingapp.DTO;
 
 import com.hackathon.bankingapp.entities.User;
-import com.hackathon.bankingapp.utils.UUIDUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.util.UUID;
 
 @Data
 @NoArgsConstructor
