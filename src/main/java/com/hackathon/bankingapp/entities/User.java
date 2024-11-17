@@ -21,8 +21,8 @@ import java.util.UUID;
 public class User {
 
     @Id
-    @Column(name = "account_number", columnDefinition = "BINARY(16)")
-    private byte[] accountNumber;
+    @Column(name = "account_number", columnDefinition = "VARCHAR(36)")
+    private String accountNumber;
 
     @NotBlank
     private String name; // Full name of the user
@@ -41,17 +41,7 @@ public class User {
     @NotBlank
     private String phoneNumber;
 
-    // Constructor que acepta un UUID
-    public User(UUID accountNumber) {
-        this.accountNumber = UUIDUtil.toBytes(accountNumber); // Convertir UUID a byte[]
-    }
-
-    // Método para obtener el UUID del número de cuenta
-    public UUID getAccountNumberAsUUID() {
-        return UUIDUtil.fromBytes(accountNumber); // Convertir byte[] a UUID
-    }
-
-    // toString, equals y hashCode si es necesario
+    // toString, equals y hashCode
 
     @Override
     public boolean equals(Object o) {

@@ -13,6 +13,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
 
     Optional<User> findByPhoneNumber(String phoneNumber);
 
-    Optional<User> findByAccountNumber(byte[] accountNumber); // Cambiado UUID a byte[]
+    Optional<User> findByAccountNumber(String accountNumber); // Cambiado UUID a byte[]
 
 }

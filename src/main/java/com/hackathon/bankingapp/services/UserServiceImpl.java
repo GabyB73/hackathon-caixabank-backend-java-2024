@@ -39,14 +39,6 @@ public class UserServiceImpl implements IUserService {
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    private byte[] toByteArray(UUID accountNumber) {
-        return UUIDUtil.toBytes(accountNumber);
-    }
-
-    private UUID toUUID(byte[] accountNumberBytes) {
-        return UUIDUtil.fromBytes(accountNumberBytes);
-    }
-
     @Override
     public User registerUser(UserRegistrationDTO userRegistrationDTO) {
 
@@ -89,8 +81,8 @@ public class UserServiceImpl implements IUserService {
         // Crear un nuevo usuario y guardarlo en la base de datos
         User user = new User();
         // Generar un nuevo UUID para el número de cuenta
-        UUID accountNumber = UUID.randomUUID();
-        user.setAccountNumber(UUIDUtil.toBytes(accountNumber)); // Convertir UUID a byte[]
+        String accountNumber = UUID.randomUUID().toString();
+        user.setAccountNumber(accountNumber);
         user.setName(userRegistrationDTO.getName());
         user.setPassword(hashedPassword);
         user.setEmail(userRegistrationDTO.getEmail());
@@ -109,8 +101,8 @@ public class UserServiceImpl implements IUserService {
         // Si no se encuentra por email, intentar por accountNumber si es válido
         if (userOptional.isEmpty()) {
             try {
-                UUID accountNumber = UUID.fromString(identifier);
-                userOptional = userRepository.findByAccountNumber(toByteArray(accountNumber));
+
+                userOptional = userRepository.findByAccountNumber(identifier);
             } catch (IllegalArgumentException e) {
                 // El identificador no es UUID válido; se manejará con excepción personalizada luego
                 throw new InvalidIdentifierFormatException("Invalid identifier format");
@@ -132,34 +124,27 @@ public class UserServiceImpl implements IUserService {
                     .parseClaimsJws(token)
                     .getBody();
 
-            UUID accountNumber = UUID.fromString(claims.getSubject());
-            User user = userRepository.findByAccountNumber(UUIDUtil.toBytes(accountNumber))
+            String accountNumber = claims.getSubject();
+            User user = userRepository.findByAccountNumber(accountNumber)
                     .orElseThrow(() -> new UserNotFoundException("User not found for account number: " + accountNumber));
 
-            UUID accountNumberUUID = toUUID(user.getAccountNumber());
-
-            return new UserInfoResponseDTO(
-                    user.getName(),
-                    user.getEmail(),
-                    user.getPhoneNumber(),
-                    user.getAddress(),
-                    accountNumberUUID);
+            return UserInfoResponseDTO.fromUser(user);
         } catch (Exception e) {
             logger.error("Error extracting user from token: {}", e.getMessage());
             throw new InvalidTokenException("Invalid token", e);
         }
     }
     @Override
-    public AccountInfoResponseDTO getAccountInfo(UUID accountNumber) {
+    public AccountInfoResponseDTO getAccountInfo(String accountNumber) {
         // Buscar el usuario por el número de cuenta
-        User user = userRepository.findByAccountNumber(toByteArray(accountNumber))
+        User user = userRepository.findByAccountNumber(accountNumber)
                 .orElseThrow(() -> new UserNotFoundException("User not found for account number: " + accountNumber));
 
         // Supongamos que tienes un método en User que obtiene el saldo
         double balance = user.getBalance();  // Aquí deberías tener un método en la entidad User
 
         // Retornar la información de la cuenta
-        return new AccountInfoResponseDTO(user.getAccountNumber().toString(), balance);
+        return new AccountInfoResponseDTO(user.getAccountNumber(), balance);
 
     }
 

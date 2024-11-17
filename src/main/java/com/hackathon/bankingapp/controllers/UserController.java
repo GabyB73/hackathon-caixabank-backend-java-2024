@@ -40,14 +40,14 @@ public class UserController {
 
     @GetMapping("/info")
     public ResponseEntity<UserInfoResponseDTO> getUserInfo(@RequestHeader("Authorization") String token) {
-        UUID accountNumber = tokenUtil.extractAccountNumberFromToken(token); // Método que extrae el número de cuenta del token
+        //String accountNumber = tokenUtil.extractAccountNumberFromToken(token); // Método que extrae el número de cuenta del token
         UserInfoResponseDTO userInfo = userService.getUserInfoFromToken(token);
         return new ResponseEntity<>(userInfo, HttpStatus.OK);
     }
 
     @GetMapping("/account-info")
     public ResponseEntity<AccountInfoResponseDTO> getAccountInfo(@RequestHeader("Authorization") String token) {
-        UUID accountNumber = tokenUtil.extractAccountNumberFromToken(token); // Método que extrae el número de cuenta del token
+        String accountNumber = tokenUtil.extractAccountNumberFromToken(token); // Método que extrae el número de cuenta del token
         AccountInfoResponseDTO accountInfo = userService.getAccountInfo(accountNumber);
         return new ResponseEntity<>(accountInfo, HttpStatus.OK);
     }

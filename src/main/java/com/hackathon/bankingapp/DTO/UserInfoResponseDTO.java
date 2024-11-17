@@ -17,17 +17,18 @@ public class UserInfoResponseDTO {
     private String email;
     private String phoneNumber;
     private String address;
-    private UUID accountNumber;
+    private String accountNumber;
     // No incluir el hashedPassword aquí
-// Método estático para convertir desde byte[] a UUID
+
+// Método estático para convertir desde User a UserInfoResponseDTO
     public static UserInfoResponseDTO fromUser(User user) {
-        UUID accountNumber = UUIDUtil.fromBytes(user.getAccountNumber()); // Convierte byte[] a UUID
+
         return new UserInfoResponseDTO(
                 user.getName(),
                 user.getEmail(),
                 user.getPhoneNumber(),
                 user.getAddress(),
-                accountNumber
+                user.getAccountNumber()
         );
     }
 
